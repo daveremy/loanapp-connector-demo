@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-time Events</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+            socket.on('connect', function() {
+                console.log('Websocket connected!');
+            });
+
+            socket.on('event', function(data) {
+                // Display the event data
+                const node = document.createElement("LI");
+                const textnode = document.createTextNode(JSON.stringify(data));
+                node.appendChild(textnode);
+                document.getElementById("events").appendChild(node);
+            });
+        });
+    </script>
+</head>
+<body>
+<!-- Inside the <body> tag of index.html -->
+<nav>
+    <a href="/">Home</a> | <a href="/raw-events">View Raw Events</a>
+</nav>
+<h1>Real-time Loan Application Events</h1>
+<ul id="events">
+    <!-- Events will be listed here -->
+</ul>
+</body>
+</html>

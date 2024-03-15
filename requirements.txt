@@ -1,0 +1,5 @@
+Flask==3.0.2
+Flask-SocketIO==5.3.6
+python-socketio[client]==5.5.0
+esdbclient==1.0.17
+requests==2.27.1
