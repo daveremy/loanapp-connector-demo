@@ -3,6 +3,7 @@ import json
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
 import time
 import string
+from collections import defaultdict
 
 # Settings for the EventStoreDB connection
 EVENTSTOREDB_URI = "esdb://localhost:2113?tls=false"
@@ -10,6 +11,10 @@ STREAM_PREFIX = "loanApplication-"
 
 # Initialize the EventStoreDB client
 client = EventStoreDBClient(uri=EVENTSTOREDB_URI)
+
+MAX_ACTIVE_LOANS = 15
+MIN_TIME_BETWEEN_EVENTS = 1
+MAX_TIME_BETWEEN_EVENTS = 3
 
 def generate_unique_loan_id():
     """
@@ -77,54 +82,70 @@ def create_event_data(event_type, unique_loan_identifier):
     }
     return data
 
-def create_loan_application_events(unique_loan_identifier):
-    """
-    Creates a sequence of events for a loan application process, including event-specific data.
-    """
-    events_sequence = [
-        "ApplicationReceived",
-        "CreditCheckInitiated",
-        "CreditCheckCompleted"
-    ]
+def next_event_sequence(last_event):
+    if last_event == "ApplicationReceived":
+        return "CreditCheckInitiated"
+    elif last_event == "CreditCheckInitiated":
+        return "CreditCheckCompleted"
+    elif last_event == "CreditCheckCompleted":
+        return random.choice(["ApplicationApproved", "ApplicationDenied", "ManualReviewRequired"])
+    elif last_event == "ManualReviewRequired":
+        return random.choice(["ApplicationApproved", "ApplicationDenied"])
+    elif last_event == "ApplicationApproved":
+        return "LoanDisbursed"
+    elif last_event in ["ApplicationDenied", "LoanDisbursed"]:
+        # These are final states; return None to indicate no further events
+        return None
+    return None
 
-    outcome = random.choice(["ApplicationApproved", "ApplicationDenied", "ManualReviewRequired"])
-    events_sequence.append(outcome)
-    final_outcome = outcome
-
-    if outcome == "ManualReviewRequired":
-        final_outcome = random.choice(["ApplicationApproved", "ApplicationDenied"])
-        events_sequence.append(final_outcome)
+def append_event_to_loan(loan_id, event_type, active_loans):
+    """
+    Appends an event to a loan's event sequence, both in the active_loans dictionary and in the EventStoreDB stream.
+    """
+    # Generate event data using the event_type_to_function mapping
+    event_data = create_event_data(event_type, loan_id)
     
-    if final_outcome == "ApplicationApproved":
-        events_sequence.append("LoanDisbursed")
-
-    return [
-        NewEvent(
-            type=event_type,
-            data=json.dumps(create_event_data(event_type, unique_loan_identifier)).encode('utf-8')
-        )
-        for event_type in events_sequence
-    ]
+    # Append event to the EventStoreDB stream
+    client.append_to_stream(
+        stream_name=STREAM_PREFIX + loan_id,
+        current_version=StreamState.ANY,
+        events=[NewEvent(type=event_type, data=json.dumps(event_data).encode('utf-8'))]
+    )
+    
+    # Log the event generation
+    print(f"Generated '{event_type}' event for loan {loan_id}.")
+    
+    # Update the active_loans dictionary
+    active_loans[loan_id].append(event_type)
 
 def continuous_event_generation():
-    """
-    Continuously generates loan application events with meaningful data.
-    """
+    active_loans = defaultdict(list)
+
     while True:
-        unique_loan_identifier = generate_unique_loan_id()
-        stream_name = STREAM_PREFIX + unique_loan_identifier
-        events = create_loan_application_events(unique_loan_identifier)
+        # Ensure there are active loans being processed
+        while len(active_loans) < MAX_ACTIVE_LOANS:
+            loan_id = generate_unique_loan_id()
+            append_event_to_loan(loan_id, "ApplicationReceived", active_loans)
 
-        for event in events:
-            client.append_to_stream(
-                stream_name=stream_name,
-                current_version=StreamState.ANY,
-                events=[event]
-            )
-            print(f"Generated event '{event.type}' for loan {unique_loan_identifier} in stream {stream_name}.")
-            time.sleep(random.randint(1, 3))
+        # Randomly choose a loan for the next action
+        loan_id = random.choice(list(active_loans.keys()))
+        if loan_id:
+            events = active_loans[loan_id]
+            last_event = events[-1]
+            new_event = next_event_sequence(last_event)
 
-        time.sleep(random.randint(5, 10))
+            if new_event:
+                append_event_to_loan(loan_id, new_event, active_loans)
+                # Random delay after processing an event
+                time.sleep(random.uniform(MIN_TIME_BETWEEN_EVENTS, MAX_TIME_BETWEEN_EVENTS))
+
+            # If the event is a final state, remove the loan from active processing
+            if new_event is None:
+                del active_loans[loan_id]
+
+        # Add some delay before choosing the next loan
+        time.sleep(random.uniform(MIN_TIME_BETWEEN_EVENTS, MAX_TIME_BETWEEN_EVENTS))
+
 
 if __name__ == "__main__":
     continuous_event_generation()
