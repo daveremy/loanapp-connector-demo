@@ -9,39 +9,45 @@
         document.addEventListener('DOMContentLoaded', () => {
             var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
-            socket.on('event', function(data) {
+            socket.on('update_state', function (data) {
                 const eventsList = document.getElementById("events");
-                
+
                 // Create a new list item for this event
                 const eventItem = document.createElement("LI");
                 eventItem.classList.add("event-item");
 
-                // Event Type
-                const eventType = document.createElement("P");
-                eventType.textContent = `Event Type: ${data.es_headers['Es-Event-Type'] || 'Unknown'}`;
-                eventType.classList.add("event-type");
-                eventItem.appendChild(eventType);
+            // Display the latest state at the top
+            const latestState = document.createElement("P");
+            latestState.textContent = `Latest State: ${JSON.stringify(data.updated_state)}`;
+            latestState.classList.add("latest-state");
+            eventItem.appendChild(latestState);
 
-                // Headers
-                const headersElement = document.createElement("PRE");
-                headersElement.classList.add("event-headers");
-                headersElement.textContent = JSON.stringify(data.es_headers, null, 2);
-                eventItem.appendChild(headersElement);
+            // Event Type
+            const eventType = document.createElement("P");
+            eventType.textContent = `Event Type: ${data.es_headers['Es-Event-Type'] || 'Unknown'}`;
+            eventType.classList.add("event-type");
+            eventItem.appendChild(eventType);
 
-                // Event Data
-                const eventDataElement = document.createElement("PRE");
-                eventDataElement.classList.add("event-data");
-                eventDataElement.textContent = JSON.stringify(data.event_data, null, 2);
-                eventItem.appendChild(eventDataElement);
+            // Headers
+            const headersElement = document.createElement("PRE");
+            headersElement.classList.add("event-headers");
+            headersElement.textContent = JSON.stringify(data.es_headers, null, 2);
+            eventItem.appendChild(headersElement);
 
-                // Prepend the new event item to the list of events
-                eventsList.insertBefore(eventItem, eventsList.firstChild);
-            });
+            // Event Data
+            const eventDataElement = document.createElement("PRE");
+            eventDataElement.classList.add("event-data");
+            eventDataElement.textContent = JSON.stringify(data.event_data, null, 2);
+            eventItem.appendChild(eventDataElement);
+
+            // Prepend the new event item to the list of events
+            eventsList.insertBefore(eventItem, eventsList.firstChild);
+        });
         });
     </script>
     <style>
         .event-item { margin-bottom: 15px; }
-        .event-type { font-weight: bold; }
+        .latest-state, .event-type { font-weight: bold; }
         .event-headers, .event-data { margin-top: 5px; font-size: 0.9em; }
     </style>
 </head>
