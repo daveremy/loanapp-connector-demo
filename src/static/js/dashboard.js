@@ -13,11 +13,11 @@ function updateLoanApplications(eventType, event, state) {
 
     let loanCard = document.getElementById(`loan-${loanId}`);
     if (loanCard) {
-        // if loancard exists then lets update it to the new state
         updateLoanCard(loanCard, state);
+        // if this is a terminal event (e.g., LoanDisbursed) then remove from active loans section
         if (isTerminal(eventType) && loanCard.parentNode.id == 'activeLoans') {
-            // move to completed loans
             loanCard.remove();
+            // move to completed loans
             completedLoansDiv.appendChild(loanCard);
         }
     } else {
@@ -26,7 +26,7 @@ function updateLoanApplications(eventType, event, state) {
             completedLoansDiv.appendChild(loanCard);
             setTimeout(() => {
                 loanCard.remove();
-            }, 29999); // Remove from completed after 30 seconds
+            }, 60000); // Remove from completed after 60 seconds
         } else {
             activeLoansDiv.appendChild(loanCard);
         }
@@ -58,19 +58,63 @@ function createLoanCard(state) {
 
 function updateLoanCard(card, state) {
     const header = card.querySelector('.loan-header');
-    header.innerHTML = `Loan ID: ${state.loan_id}, Purpose: ${state.loan_purpose}, Amount: $${state.loan_amount}, Status: <span class="status-${state.status.toLowerCase().replace(/\s/g, '-')}" style="font-weight: bold;">${state.status}</span>`;
+    const formattedLoanAmount = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0 
+    }).format(state.loan_amount);
+    header.innerHTML = `Loan ID: ${state.loan_id}, Purpose: ${state.loan_purpose}, Amount: ${formattedLoanAmount}, Status: <span class="status-${state.status.toLowerCase().replace(/\s/g, '-')}" style="font-weight: bold;">${state.status}</span>`;
 }
 
 function addLoanEvent(loanCard, eventType, event) {
-    const eventsList = loanCard.querySelector('.loan-events');
-    if (!eventsList.querySelector('.loan-event')) {
-        const eventsHeader = document.createElement('h2');
+    let eventsList = loanCard.querySelector('.loan-events');
+    let eventsHeader = loanCard.querySelector('.events-header');
+
+    // Create the events header if it doesn't exist
+    if (!eventsHeader) {
+        eventsHeader = document.createElement('h2');
+        eventsHeader.className = 'events-header';
         eventsHeader.innerText = 'Events:';
-        eventsList.appendChild(eventsHeader);
+        eventsList = document.createElement('div');
+        eventsList.className = 'loan-events';
+        loanCard.appendChild(eventsHeader); // Add the header to the loan card
+        loanCard.appendChild(eventsList); // Re-create the events list container below the header
     }
 
+    // Create and format the event item
     const eventItem = document.createElement('div');
     eventItem.className = 'loan-event';
-    eventItem.innerHTML = `${eventType} - ${JSON.stringify(event, null, 1)}`;
-    eventsList.appendChild(eventItem); 
+    const formattedEvent = formatEventDetails(event);
+    eventItem.innerHTML = `${eventType} - ${formattedEvent}`;
+
+    // Check if there are any events already, insert new event just below the header
+    if (eventsList.firstChild) {
+        eventsList.insertBefore(eventItem, eventsList.firstChild);
+    } else {
+        eventsList.appendChild(eventItem); // If it's the first event, just append it
+    }
+}
+
+function formatEventDetails(event) {
+    // Assuming your timestamp is in Unix time (seconds), convert to milliseconds
+    const formattedTimestamp = new Date(event.timestamp * 1000).toLocaleString();
+
+    // Exclude loanId and timestamp from the event details to be displayed
+    const { loanId, timestamp, ...details } = event;
+
+    // Format any monetary values
+    for (const key in details) {
+        if (typeof details[key] === 'number' && (key.toLowerCase().includes('amount') || key.toLowerCase().includes('currency'))) {
+            details[key] = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(details[key]);
+        }
+    }
+
+    // Construct the details string, excluding the loanId and timestamp
+    let detailsString = Object.entries(details).map(([key, value]) => `${key}: ${value}`).join(', ');
+    if (detailsString.length > 0) {
+        detailsString = `{ ${detailsString} }`;
+    }
+
+    return `${formattedTimestamp} ${detailsString}`;
 }
