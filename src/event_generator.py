@@ -16,7 +16,7 @@ MAX_ACTIVE_LOANS = 15
 MIN_TIME_BETWEEN_EVENTS = 1
 MAX_TIME_BETWEEN_EVENTS = 3
 
-def generate_unique_loan_id():
+def generate_loan_id():
     """
     Generates a unique loan identifier with 10 uppercase characters, formatted with a hyphen after the first 4 characters.
     """
@@ -24,36 +24,36 @@ def generate_unique_loan_id():
     return f"{identifier[:4]}-{identifier[4:]}"
 
 # Event-specific data generation functions
-def application_received(unique_loan_identifier):
+def application_received(loan_id):
     return {
         "applicantName": "John Doe",
         "loanAmount": random.randint(5000, 50000),
         "loanPurpose": "Home Renovation"
     }
 
-def credit_check_initiated(unique_loan_identifier):
+def credit_check_initiated(loan_id):
     return {
         "creditCheckAgency": "Credit Bureau"
     }
 
-def credit_check_completed(unique_loan_identifier):
+def credit_check_completed(loan_id):
     return {
         "creditScore": random.randint(300, 850),
         "creditStatus": random.choice(["Good", "Fair", "Poor"])
     }
 
-def decision_event(unique_loan_identifier, event_type):
+def decision_event(loan_id, event_type):
     return {
         "reviewer": "Loan Officer",
         "decisionReason": "Satisfactory Credit Score" if event_type == "ApplicationApproved" else "Unsatisfactory Credit Score"
     }
 
-def manual_review_required(unique_loan_identifier):
+def manual_review_required(loan_id):
     return {
         "reviewReason": "Incomplete Application Details"
     }
 
-def loan_disbursed(unique_loan_identifier):
+def loan_disbursed(loan_id):
     return {
         "disbursementAmount": random.randint(5000, 50000),
         "disbursementDate": time.strftime('%Y-%m-%d', time.gmtime())
@@ -70,15 +70,15 @@ event_type_to_function = {
     "LoanDisbursed": loan_disbursed
 }
 
-def create_event_data(event_type, unique_loan_identifier):
+def create_event_data(event_type, loan_id):
     """
     Creates specific event data based on the event type, including the unique loan identifier as the loan_id.
     """
     event_data_function = event_type_to_function[event_type]
     data = {
-        "loanId": unique_loan_identifier, 
+        "loanId": loan_id, 
         "timestamp": time.time(),
-        **event_data_function(unique_loan_identifier)
+        **event_data_function(loan_id)
     }
     return data
 
@@ -118,17 +118,19 @@ def append_event_to_loan(loan_id, event_type, active_loans):
     # Update the active_loans dictionary
     active_loans[loan_id].append(event_type)
 
+def choose_loan_for_next_action(active_loans):
+    return random.choice(list(active_loans.keys()))
+
 def continuous_event_generation():
     active_loans = defaultdict(list)
 
     while True:
         # Ensure there are active loans being processed
         while len(active_loans) < MAX_ACTIVE_LOANS:
-            loan_id = generate_unique_loan_id()
+            loan_id = generate_loan_id()
             append_event_to_loan(loan_id, "ApplicationReceived", active_loans)
 
-        # Randomly choose a loan for the next action
-        loan_id = random.choice(list(active_loans.keys()))
+        loan_id = choose_loan_for_next_action(active_loans)
         if loan_id:
             events = active_loans[loan_id]
             last_event = events[-1]

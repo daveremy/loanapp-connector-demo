@@ -1,5 +1,6 @@
 def application_received(state, data):
     state.update({
+        "loan_id": data["loanId"],
         "applicant_name": data["applicantName"],
         "loan_purpose": data["loanPurpose"],
         "loan_amount": data["loanAmount"],

@@ -23,9 +23,9 @@ def handle_event():
     event_data = request.json
     es_headers = {key: value for key, value in request.headers.items() if key.startswith('Es-')}
 
-    # Extract loan ID and event type
-    loan_id = es_headers['Es-Stream'].split('-')[-1]
+    print("event_data: ", event_data)
     event_type = es_headers['Es-Event-Type']
+    loan_id = event_data['loanId']
 
     # Prepare event for evolver
     event = {
@@ -41,8 +41,7 @@ def handle_event():
 
     # If the updated state indicates a terminal state, remove the loan from active processing
     if updated_state["status"] in ["ApplicationDenied", "LoanDisbursed"]:
-        # Optionally, you might want to do some cleanup or logging before removing
-        del loan_applications_state[loan_id]
+        loan_applications_state.pop(loan_id, None)
     else:
         # Save the updated state
         loan_applications_state[loan_id] = updated_state
