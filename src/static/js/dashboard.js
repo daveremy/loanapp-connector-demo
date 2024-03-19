@@ -38,33 +38,83 @@ function isTerminal(eventType) {
     return ["LoanDisbursed", "ApplicationDenied"].includes(eventType);
 }
 
+
 function createLoanCard(state) {
     const card = document.createElement('div');
     card.className = 'loan-container';
     card.id = `loan-${state.loan_id}`;
 
+    // Create the header but don't set its content here
     const header = document.createElement('div');
     header.className = 'loan-header';
     card.appendChild(header);
+
+    // Create placeholders for loan summary and event expansion
+    const loanSummary = document.createElement('div');
+    loanSummary.className = 'loan-summary';
+    header.appendChild(loanSummary); // Append it to header but don't set innerHTML here
+
+    const expandEvents = document.createElement('div');
+    expandEvents.className = 'expand-events';
+    expandEvents.textContent = 'Click to view events';
+    header.appendChild(expandEvents);
 
     const eventsList = document.createElement('div');
     eventsList.className = 'loan-events';
     card.appendChild(eventsList);
 
+    // Set the initial content and update as necessary
     updateLoanCard(card, state);
+
+    // Toggle visibility of the events list on header click
+    header.addEventListener('click', function() {
+        eventsList.classList.toggle('active');
+        expandEvents.textContent = eventsList.classList.contains('active') ? 'Click to hide events' : 'Click to view events';
+    });
 
     return card;
 }
 
-function updateLoanCard(card, state) {
-    const header = card.querySelector('.loan-header');
+function updateStatusClass(loanCard, status) {
+    // Define a mapping of statuses to class names
+    const statusClassMap = {
+        'ApplicationReceived': 'status-applicationreceived',
+        'CreditCheckInitiated': 'status-creditcheckinitiated',
+        'CreditCheckCompleted': 'status-creditcheckcompleted',
+        'ApplicationApproved': 'status-applicationapproved',
+        'ApplicationDenied': 'status-applicationdenied',
+        'ManualReviewRequired': 'status-manualreviewrequired',
+        'LoanDisbursed': 'status-loandisbursed'
+    };
+
+    // Remove all possible status classes first
+    Object.values(statusClassMap).forEach(statusClass => {
+        loanCard.classList.remove(statusClass);
+    });
+
+    // Add the new status class based on the mapping
+    const newStatusClass = statusClassMap[status] || 'status-unknown';
+    loanCard.classList.add(newStatusClass);
+}
+
+
+// Now, updateLoanCard will handle setting the content for the loan summary right from the start as well as updating it
+function updateLoanCard(loanCard, state) {
+    const loanSummary = loanCard.querySelector('.loan-summary');
     const formattedLoanAmount = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0 
     }).format(state.loan_amount);
-    header.innerHTML = `Loan ID: ${state.loan_id}, Purpose: ${state.loan_purpose}, Amount: ${formattedLoanAmount}, Status: <span class="status-${state.status.toLowerCase().replace(/\s/g, '-')}" style="font-weight: bold;">${state.status}</span>`;
+
+    loanSummary.innerHTML = `
+        Loan ID: ${state.loan_id}, Purpose: ${state.loan_purpose}, 
+        Amount: ${formattedLoanAmount}, 
+        Status: <span class="status-${state.status.toLowerCase().replace(/\s/g, '-')}" style="font-weight: bold;">${state.status}</span>
+    `;
+
+    updateStatusClass(loanCard, state.status);
 }
 
 function addLoanEvent(loanCard, eventType, event) {
@@ -76,10 +126,7 @@ function addLoanEvent(loanCard, eventType, event) {
         eventsHeader = document.createElement('h2');
         eventsHeader.className = 'events-header';
         eventsHeader.innerText = 'Events:';
-        eventsList = document.createElement('div');
-        eventsList.className = 'loan-events';
-        loanCard.appendChild(eventsHeader); // Add the header to the loan card
-        loanCard.appendChild(eventsList); // Re-create the events list container below the header
+        eventsList.insertBefore(eventsHeader, eventsList.firstChild); // Add the header to the top of the events list
     }
 
     // Create and format the event item
@@ -88,12 +135,8 @@ function addLoanEvent(loanCard, eventType, event) {
     const formattedEvent = formatEventDetails(event);
     eventItem.innerHTML = `${eventType} - ${formattedEvent}`;
 
-    // Check if there are any events already, insert new event just below the header
-    if (eventsList.firstChild) {
-        eventsList.insertBefore(eventItem, eventsList.firstChild);
-    } else {
-        eventsList.appendChild(eventItem); // If it's the first event, just append it
-    }
+    // Insert new event just below the header
+    eventsList.insertBefore(eventItem, eventsHeader.nextSibling);
 }
 
 function formatEventDetails(event) {

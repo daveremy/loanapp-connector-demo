@@ -6,46 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-
-        .loan-container {
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-            padding: 10px;
-        }
-
-        .loan-header {
-            background-color: #f5f5f5;
-            padding: 10px;
-            margin: -10px -10px 10px -10px;
-        }
-
-        .loan-event {
-            border-bottom: 1px solid #eee;
-            padding: 5px;
-        }
-
-        .loan-event:last-child {
-            border-bottom: none;
-        }
-
-        .status-new {
-            color: blue;
-        }
-
-        .status-in-progress {
-            color: orange;
-        }
-
-        .status-completed,
-        .status-LoanDisbursed,
-        .status-ApplicationDenied {
-            color: green;
-        }
-    </style>
 </head>
 <body>
 <nav>
