@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Loan Application Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
@@ -12,9 +13,11 @@
     <a href="/">Home</a> | <a href="/raw-events">View Raw Events</a>
 </nav>
 <h1>Loan Application Dashboard</h1>
-<div id="activeLoans">
+<div id="activeLoansSection">
     <h2>Active Loans</h2>
-    <!-- Active loans will be listed here -->
+    <div id="activeLoansGrid">
+        <!-- Active loans will be listed here -->
+    </div>
 </div>
 <div id="completedLoans">
     <h2>Completed Loans</h2>

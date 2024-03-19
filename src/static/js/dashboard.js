@@ -8,16 +8,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function updateLoanApplications(eventType, event, state) {
     const loanId = state['loan_id'];
-    const activeLoansDiv = document.getElementById('activeLoans');
+    const activeLoansDiv = document.getElementById('activeLoansGrid'); // Updated ID
     const completedLoansDiv = document.getElementById('completedLoans');
 
     let loanCard = document.getElementById(`loan-${loanId}`);
     if (loanCard) {
         updateLoanCard(loanCard, state);
         // if this is a terminal event (e.g., LoanDisbursed) then remove from active loans section
-        if (isTerminal(eventType) && loanCard.parentNode.id == 'activeLoans') {
+        if (isTerminal(eventType) && loanCard.parentNode.id == 'activeLoansGrid') { // Updated ID
             loanCard.remove();
-            // move to completed loans
             completedLoansDiv.appendChild(loanCard);
         }
     } else {
@@ -66,11 +65,16 @@ function createLoanCard(state) {
     // Set the initial content and update as necessary
     updateLoanCard(card, state);
 
-    // Toggle visibility of the events list on header click
     header.addEventListener('click', function() {
         eventsList.classList.toggle('active');
         expandEvents.textContent = eventsList.classList.contains('active') ? 'Click to hide events' : 'Click to view events';
-    });
+        if (eventsList.style.display === "none") {
+            eventsList.style.display = "block";
+        } else {
+            eventsList.style.display = "none";
+    }
+});
+
 
     return card;
 }
