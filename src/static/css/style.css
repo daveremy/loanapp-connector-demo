@@ -3,12 +3,11 @@ body {
     background-color: #121212;
     color: #fff;
     margin: 0;
-        padding: 0;
+    padding: 20px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        height: 100vh;
-        /* Full viewport height */
+    min-height: 100vh;
     }
     
     nav {
@@ -22,37 +21,50 @@ body {
 nav a {
     color: #1e90ff;
     margin: 0 10px;
-        text-decoration: none;
+    text-decoration: none;
         font-size: 1.2em;
     }
-    
-    #activeLoansSection,
-    #completedLoans {
-        width: calc(100% - 40px);
-        /* Full width with padding */
-        margin: 20px 0;
+h1 {
+    font-size: 2em;
+    margin: 20px 0;
+}
+
+h2 {
+    font-size: 1.5em;
+    margin-top: 10px;
+    /* Reduced top margin */
+    margin-bottom: 10px;
+    /* Reduced bottom margin */
+}
+
+#activeLoansSection {
+    width: calc(100% - 40px);
         padding: 20px;
-    }
-    
-    #activeLoansSection {
-        height: 70vh;
-        /* 70% of the viewport height */
-        overflow-y: auto;
-        /* Scrollable if content exceeds height */
+        padding-bottom: 20px;
+        /* Adjusted padding-bottom */
+        margin-bottom: 0;
+        /* Reduced margin-bottom */
+        border-bottom: 1px solid #d3d3d3;
+        /* Gray separator */
     }
     
     #activeLoansGrid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        /* Responsive grid */
-        grid-gap: 20px;
+    grid-gap: 20px;
     }
     
     #completedLoans {
-        height: 30vh;
-        /* 30% of the viewport height */
-        overflow-y: auto;
-        /* Scrollable if content exceeds height */
+    display: grid;
+        grid-template-columns: 1fr;
+        /* Single column layout */
+        gap: 20px;
+        width: calc(100% - 40px);
+        padding: 20px;
+        padding-top: 10px;
+        /* Reduced padding-top */
+        margin-top: 0;
+        /* Reduced margin-top */
 }
 
 .loan-container {
@@ -62,9 +74,8 @@ nav a {
     padding: 15px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     display: flex;
-        flex-direction: column;
+    flex-direction: column;
         overflow: hidden;
-        /* Prevents content from spilling out */
 }
 
 .loan-header,
@@ -91,15 +102,14 @@ nav a {
     background-color: #252525;
     border-radius: 3px;
     text-align: center;
-        margin-top: auto;
-        /* Push to the bottom of the card */
-    }
-    
-    .loan-events {
+    margin-top: auto;
+}
+
+.loan-events {
     display: none;
-        /* Hide by default */
-        flex-direction: column;
+    flex-direction: column;
     }
+
 .loan-event {
     background-color: #252525;
     border-radius: 3px;
@@ -107,6 +117,7 @@ nav a {
     margin-bottom: 5px;
     font-size: 0.9em;
 }
+
 /* Status color coding */
 .status-applicationreceived {
     background-color: #ffa500;
@@ -136,7 +147,6 @@ nav a {
     background-color: orange;
 }
 
-/* Responsive adjustments for smaller screens */
 @media (max-width: 1024px) {
     #activeLoansGrid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -144,11 +154,9 @@ nav a {
 }
 
 @media (max-width: 768px) {
-
     #activeLoansSection,
-    #completedLoans {
+        #completedLoans {
         width: 100%;
-        /* Full width */
     }
 }
 
