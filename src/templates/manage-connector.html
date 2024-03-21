@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Loan App Demo ESDB Connector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        <a href="/raw-events">View Raw Events</a> |
+        <a href="/manage-connector">Manage ESDB Connector</a>
+    </nav>
+
+    <h1>Manage ESDB Loan App Demo ESDB Connector</h1>
+
+    <h2>Loan App ESDB Connector Info</h2>
+
+    <div id="loanAppESDBConnectorInfo">
+        <!-- Connectors list will be populated here -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/connectors')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const connectorsListElement = document.getElementById('loanAppESDBConnectorInfo');
+                    // Find the specific connector by ID
+                    const loanAppConnector = data.find(connector => connector.id === "loanapp-connector-demo");
+                    if (loanAppConnector) {
+                        const details = document.createElement('div');
+                        details.innerHTML = `
+                <strong>ID:</strong> ${loanAppConnector.id}<br>
+                <strong>Filter:</strong> ${loanAppConnector.filter}<br>
+                <strong>Sink:</strong> ${loanAppConnector.sink}<br>
+                <strong>Affinity:</strong> ${loanAppConnector.affinity}<br>
+                <strong>Enabled:</strong> ${loanAppConnector.enabled}<br>
+                <strong>Reset To:</strong><br>
+                &nbsp;&nbsp;&nbsp;<strong>Round:</strong> ${loanAppConnector.resetTo.round}<br>
+                &nbsp;&nbsp;&nbsp;<strong>Checkpoint:</strong> ${loanAppConnector.resetTo.checkpoint}<br>
+                <strong>Checkpoint Config:</strong><br>
+                &nbsp;&nbsp;&nbsp;<strong>Interval:</strong> ${loanAppConnector.checkpointConfig.interval}<br>
+            `;
+                        connectorsListElement.appendChild(details);
+                    } else {
+                        connectorsListElement.textContent = 'Connector "loanapp-connector-demo" not found.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching connectors:', error);
+                    document.getElementById('connectorsList').textContent = 'Failed to load connectors.';
+                });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, request, jsonify, render_template
 from flask_socketio import SocketIO, emit
 from evolver import evolve
@@ -15,6 +16,10 @@ def index():
 @app.route('/raw-events')
 def raw_events():
     return render_template('events_raw.html')
+
+@app.route('/manage-connector')
+def manage_connector():
+    return render_template('manage-connector.html')
 
 @app.route('/event', methods=['POST'])
 def handle_event():
@@ -55,6 +60,19 @@ def handle_event():
     socketio.emit('update_state', data_to_emit, broadcast=True)
 
     return jsonify(success=True), 200
+
+@app.route('/api/connectors', methods=['GET'])
+def get_connectors():
+    esdb_url = "http://localhost:2113/connectors/list"
+    # Assuming your EventStoreDB uses HTTP Basic Auth
+    auth = ('admin', 'changeit')
+    # Make a GET request to the EventStoreDB connectors list endpoint
+    response = requests.get(esdb_url, auth=auth, verify=False)  # Set verify=True in production
+    if response.ok:
+        return jsonify(response.json()), 200
+    else:
+        return jsonify({"error": "Failed to fetch connectors"}), response.status_code
+
 
 @socketio.on('connect')
 def test_connect():
