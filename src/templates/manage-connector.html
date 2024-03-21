@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>Loan App Demo ESDB Connector</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-
 <body>
     <nav>
         <a href="/">Home</a> |
@@ -17,50 +15,112 @@
 
     <h1>Manage ESDB Loan App Demo ESDB Connector</h1>
 
-    <h2>Loan App ESDB Connector Info</h2>
+    <div id="feedback" style="color: red;"></div>
 
+    <!-- Form to Create Connector -->
+    <div>
+        <h2>Create Loan Application Connector</h2>
+        <form id="createConnectorForm" onsubmit="event.preventDefault(); createConnector();">
+            Connector Name: <input type="text" id="connectorName" value="loanapp-connector-demo" required><br>
+            Sink URL: <input type="url" id="sinkUrl" value="http://localhost:5000/event" required><br>
+            <button type="submit">Create Connector</button>
+        </form>
+    </div>
+
+    <h2>Loan App ESDB Connector Info</h2>
     <div id="loanAppESDBConnectorInfo">
-        <!-- Connectors list will be populated here -->
+        <!-- Connector info will be populated here -->
+    </div>
+
+    <div id="connectorControls">
+        <button onclick="modifyConnector('enable')">Enable Connector</button>
+        <button onclick="modifyConnector('disable')">Disable Connector</button>
+        <button onclick="modifyConnector('reset')">Reset Connector</button>
+        <button onclick="modifyConnector('delete')">Delete Connector</button>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', fetchConnectorInfo);
+
+        function fetchConnectorInfo() {
             fetch('/api/connectors')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
+                .then(handleResponse)
                 .then(data => {
-                    const connectorsListElement = document.getElementById('loanAppESDBConnectorInfo');
-                    // Find the specific connector by ID
-                    const loanAppConnector = data.find(connector => connector.id === "loanapp-connector-demo");
-                    if (loanAppConnector) {
-                        const details = document.createElement('div');
-                        details.innerHTML = `
-                <strong>ID:</strong> ${loanAppConnector.id}<br>
-                <strong>Filter:</strong> ${loanAppConnector.filter}<br>
-                <strong>Sink:</strong> ${loanAppConnector.sink}<br>
-                <strong>Affinity:</strong> ${loanAppConnector.affinity}<br>
-                <strong>Enabled:</strong> ${loanAppConnector.enabled}<br>
-                <strong>Reset To:</strong><br>
-                &nbsp;&nbsp;&nbsp;<strong>Round:</strong> ${loanAppConnector.resetTo.round}<br>
-                &nbsp;&nbsp;&nbsp;<strong>Checkpoint:</strong> ${loanAppConnector.resetTo.checkpoint}<br>
-                <strong>Checkpoint Config:</strong><br>
-                &nbsp;&nbsp;&nbsp;<strong>Interval:</strong> ${loanAppConnector.checkpointConfig.interval}<br>
-            `;
-                        connectorsListElement.appendChild(details);
+                    const connectorInfo = document.getElementById('loanAppESDBConnectorInfo');
+                    const connector = data.find(connector => connector.id === 'loanapp-connector-demo');
+                    if (connector) {
+                        connectorInfo.innerHTML = `
+                            <strong>ID:</strong> ${connector.id}<br>
+                            <strong>Filter:</strong> ${connector.filter || 'None'}<br>
+                            <strong>Sink:</strong> ${connector.sink}<br>
+                            <strong>Affinity:</strong> ${connector.affinity}<br>
+                            <strong>Enabled:</strong> ${connector.enabled}<br>
+                            <strong>Reset To:</strong> Round: ${connector.resetTo.round}, Checkpoint: ${connector.resetTo.checkpoint || 'None'}<br>
+                            <strong>Checkpoint Config:</strong> Interval: ${connector.checkpointConfig.interval}<br>
+                        `;
                     } else {
-                        connectorsListElement.textContent = 'Connector "loanapp-connector-demo" not found.';
+                        connectorInfo.textContent = 'Connector "loanapp-connector-demo" not found.';
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching connectors:', error);
-                    document.getElementById('connectorsList').textContent = 'Failed to load connectors.';
+                    console.error('Error fetching connector info:', error);
+                    document.getElementById('feedback').textContent = 'Failed to load connector info.';
                 });
-        });
+        }
+
+        function createConnector() {
+            const name = document.getElementById('connectorName').value;
+            const sinkUrl = document.getElementById('sinkUrl').value;
+            // Adjusted endpoint to a generic '/api/connector' for creation; adjust as needed
+            fetch('/api/connector', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id: name, 
+                    Sink: sinkUrl
+                })
+            })
+            .then(handleResponse)
+            .then(() => showFeedback('Connector created successfully.'))
+            .catch(error => showFeedback(`Error creating connector: ${error}`, true));
+        }
+
+        function modifyConnector(action) {
+            const url = `/api/connectors/loanapp-connector-demo${action === 'delete' ? '' : '/' + action}`;
+            const options = {
+                method: action === 'delete' ? 'DELETE' : 'POST', // Use DELETE method for delete action
+                headers: {}
+            };
+
+            if (action !== 'delete') {
+                options.headers['Content-Type'] = 'application/json';
+            }
+
+            fetch(url, options)
+                .then(handleResponse)
+                .then(() => {
+                    if (action === 'delete') {
+                        document.getElementById('loanAppESDBConnectorInfo').innerHTML = '<p>Connector deleted successfully.</p>';
+                    } else {
+                        fetchConnectorInfo(); // Refresh the connector info for non-delete actions
+                    }
+                    showFeedback(`Connector ${action}d successfully.`);
+                })
+                .catch(error => showFeedback(`Error ${action}ing connector: ${error}`, true));
+        }
+
+        function handleResponse(response) {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.text().then(text => text ? JSON.parse(text) : {});
+        }
+
+        function showFeedback(message, isError = false) {
+            fetchConnectorInfo()
+            const feedbackElement = document.getElementById('feedback');
+            feedbackElement.textContent = message;
+            feedbackElement.style.color = isError ? 'red' : 'green';
+            setTimeout(() => feedbackElement.textContent = '', 9000); // Clear feedback after 9 seconds
+        }
     </script>
 </body>
-
 </html>
