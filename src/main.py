@@ -7,9 +7,6 @@ from requests.auth import HTTPBasicAuth
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-# Dictionary to hold the state of active loan applications
-loan_applications_state = {}
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -22,82 +19,53 @@ def raw_events():
 def manage_connector():
     return render_template('manage-connector.html')
 
+# Dictionary to hold the latest state of active loan applications
+active_loan_apps = {}
+
+# Events from the loanapp-demo-connector are routed to this function
 @app.route('/event', methods=['POST'])
 def handle_event():
-    global loan_applications_state  # Assuming this global variable holds the state of all loan applications
-    # Print raw request data to the console
-    print("Raw request data:", request.data.decode('utf-8'))
+    event_data = request.json or {}
+    # Extract metadata from http headers
+    metadata = {key: value for key, value in request.headers.items() if key.startswith('Es-')}
     
-    # Attempt to parse JSON and print to console
-    try:
-        event_data = request.json
-        print("Parsed JSON data:", event_data)
-    except Exception as e:
-        print("Error parsing JSON:", str(e))
-        event_data = {}
-    es_headers = {key: value for key, value in request.headers.items() if key.startswith('Es-')}
-#     event_type = es_headers['Es-Event-Type']
-    loan_id = event_data.get('loanId', None)
-    print("loan_id:", loan_id)
-    event_type = es_headers['Es-Event-Type']
-    print("event_type:", event_type)
+    # Construct event object
     event = {
-        "event type": event_type,
+        "event type": metadata.get('Es-Event-Type', 'Unknown'),
         "data": event_data
     }
-    # Get the current state for this loan, or start with a new state if it's the first event for this loan
-    current_state = loan_applications_state.get(loan_id, {})
-    print("current_state:", current_state)
 
-    # Evolve the state based on the new event
-    updated_state = evolve(current_state, [event])
+    # Process the event to get the new state
+    new_state = process_event(event)
 
-    if updated_state["status"] in ["ApplicationDenied", "LoanDisbursed"]:
-        loan_applications_state.pop(loan_id, None)
-    else:
-        loan_applications_state[loan_id] = updated_state
-
-    # Data to emit includes both the new event and the updated state
+    # Data to emit
     data_to_emit = {
-        'updated_state': updated_state,
-        'new_event': event_data,
-        'es_headers': es_headers  # Optionally include if you need to display these in the UI
+        'new_state': new_state,
+        'metadata': metadata,
+        'event': event["data"],
     }
-    socketio.emit('update_state', data_to_emit, broadcast=True)
- 
+
+    # Emit the updated state along with event and metadata
+    socketio.emit('state_change', data_to_emit, broadcast=True)
+
     return jsonify({"message": "Event received"}), 200
 
-# ESDB Connector management routes/functionality below
-ESDB_USER = 'admin'
-ESDB_PASS = 'changeit'
-ESDB_URL = 'http://localhost:2113'
+def process_event(event):
+    loan_id = event["data"].get('loanId')
+    
+    # The latest state of active loans are cached in active_loan_apps dict
+    current_state = active_loan_apps.get(loan_id, {})
 
-# Utility function for ESDB requests
-def esdb_request(method, endpoint, data=None):
-    url = f"{ESDB_URL}/{endpoint}"
-    auth = HTTPBasicAuth(ESDB_USER, ESDB_PASS)
-    headers = {'Content-Type': 'application/json'}
-    response = requests.request(method, url, auth=auth, headers=headers, json=data, verify=False)
-    return response
+    # Generate the new state based on the event
+    new_state = evolve(current_state, [event])
 
-@app.route('/api/connector', methods=['POST'])
-def create_connector():
-    data = request.get_json()
-    connector_name = data.get('id')
-    sink_url = data.get('Sink')
-    
-    payload = {
-        "Sink": sink_url
-    }
-    
-    response = esdb_request('POST', f'connectors/{connector_name}', data=payload)
-    
-    if response.ok:
-        return Response(response.content, status=response.status_code, mimetype='application/json')
+    # If the loan app is in a terminal state remove it, otherwise update
+    if new_state.get("status") in ["ApplicationDenied", "LoanDisbursed"]:
+        active_loan_apps.pop(loan_id, None)
     else:
-        error_message = response.json().get('Message', 'Failed to create connector')
-        return jsonify({"error": error_message}), response.status_code
+        active_loan_apps[loan_id] = new_state
 
+    return new_state
 
 @app.route('/api/connectors', methods=['GET'])
 def get_connectors():
