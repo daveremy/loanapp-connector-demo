@@ -5,8 +5,8 @@ body {
     margin: 0;
     padding: 20px;
     display: flex;
-        flex-direction: column;
-        align-items: center;
+    flex-direction: column;
+    align-items: center;
     min-height: 100vh;
 }
 
@@ -23,164 +23,95 @@ nav a {
     margin: 0 10px;
     text-decoration: none;
     font-size: 1.2em;
-    }
-
-h1 {
-    font-size: 2em;
-    margin: 10px 0;
 }
 
-h2 {
-    font-size: 1.5em;
-    margin-top: 5px;
-        margin-bottom: 5px;
+h1, h2 {
+    color: #ccc; /* Lighter headings for better contrast */
 }
 
-#activeLoansSection {
-    width: calc(100% - 40px);
-    padding: 20px;
-        padding-bottom: 20px;
-    margin-bottom: 0;
-    border-bottom: 1px solid #d3d3d3;
+#dashboard {
+    display: flex;
+    overflow-x: auto; /* Allows horizontal scrolling */
+    width: 100%;
+    margin-bottom: 20px; /* Space between dashboard and completed loans */
 }
 
-#activeLoansGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    grid-gap: 20px;
+.dashboard-column {
+    flex: 0 0 220px; /* Adjust column width as needed */
+    background-color: #333;
+    color: white;
+    margin-right: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    height: 600px; /* Adjust height as needed */
+    overflow-y: auto; /* Allows vertical scrolling within each column */
+}
+
+.dashboard-column h2 {
+    font-size: 1.2em;
+    text-align: center;
+    margin-bottom: 15px;
 }
 
 #completedLoans {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-        width: calc(100% - 40px);
-        padding: 20px;
-        padding-top: 10px;
-    margin-top: 0;
+    width: 100%;
+    padding: 10px;
+    background-color: #252525; /* Slightly different background for visual separation */
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .loan-container {
     background-color: #1e1e1e;
     border: none;
     border-radius: 5px;
-    padding: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
     margin-bottom: 10px;
-        /* Space between cards */
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.loan-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.status-tag {
-    margin-left: auto;
-    white-space: nowrap;
-}
-
-.loan-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-        margin-bottom: 5px;
-        /* Reduced space below the header */
-    }
-    
-    .loan-header strong {
-        font-weight: bold;
-        color: #fff;
-    }
-    
-    .loan-summary {
-        font-size: 0.9em;
-        /* Smaller font size for details */
-        color: #ccc;
-        /* Lighter text color */
+.loan-summary, .expand-events, .loan-events {
+    font-size: 0.9em; /* Adjusted font size for readability */
 }
 
 .expand-events {
     cursor: pointer;
     color: #1e90ff;
+    background-color: #252525;
     text-align: center;
     padding: 5px;
-    font-size: 0.9em;
-    background-color: #252525;
-    border-radius: 3px;
     margin-top: 10px;
-        /* Space above the 'Click to view events' button */
+    border-radius: 3px;
+    display: inline-block; /* Allows button to resize with content */
 }
 
 .loan-events {
-    display: none;
-    flex-direction: column;
-    margin-top: 10px;
+    display: none; /* Initially hidden, shown on click */
+    background-color: #2c2c2c; /* Slightly lighter background for events list */
+    padding: 5px;
+    border-radius: 3px;
 }
 
 .loan-event {
-    background-color: #252525;
-    border-radius: 3px;
-    padding: 10px;
+    padding: 5px;
     margin-bottom: 5px;
-    font-size: 0.9em;
-    color: #ccc;
+    border-bottom: 1px solid #3c3c3c; /* Subtle separator between events */
 }
 
-/* Status color coding */
-.status-applicationreceived {
-    background-color: #4c00ff;
+@keyframes shake {
+  0% { transform: translateX(0); }
+  10% { transform: translateX(-10px); }
+  20% { transform: translateX(10px); }
+  30% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  50% { transform: translateX(-10px); }
+  60% { transform: translateX(10px); }
+  70% { transform: translateX(-10px); }
+  80% { transform: translateX(10px); }
+  90% { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
 }
 
-.status-creditcheckinitiated {
-    background-color: #ff4500;
-}
-
-.status-creditcheckcompleted {
-    background-color: #008000;
-}
-
-.status-applicationapproved {
-    background-color: #4caf50;
-}
-
-.status-applicationdenied {
-    background-color: #f44336;
-}
-
-.status-loandisbursed {
-    background-color: #1e90ff;
-}
-
-.status-manualreviewrequired {
-    background-color: orange;
-}
-
-@media (max-width: 1024px) {
-    #activeLoansGrid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    }
-}
-
-@media (max-width: 768px) {
-    #activeLoansSection,
-        #completedLoans {
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .loan-summary>span {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-        .loan-summary .value {
-            margin-left: 0;
-            margin-top: 2px;
-        }
+.shake {
+  animation: shake 0.5s;
 }

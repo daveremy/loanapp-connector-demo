@@ -6,23 +6,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </head>
 <body>
 <nav>
     <a href="/">Home</a> | <a href="/raw-events">View Raw Events</a> | <a href="/manage-connector">Manage ESDB Connector</a>
 </nav>
 <h1>Loan Application Dashboard</h1>
-<div id="activeLoansSection">
-    <h2>Active Loans</h2>
-    <div id="activeLoansGrid">
-        <!-- Active loans will be listed here -->
+<div id="dashboard">
+    <div class="dashboard-column" id="applicationReceived">
+        <h2>Application Received</h2>
+        <!-- Loans in ApplicationReceived status will appear here -->
+    </div>
+    <div class="dashboard-column" id="creditCheckInitiated">
+        <h2>Credit Check Initiated</h2>
+        <!-- Loans in CreditCheckInitiated status will appear here -->
+    </div>
+    <div class="dashboard-column" id="creditCheckCompleted">
+        <h2>Credit Check Completed</h2>
+        <!-- Loans in CreditCheckCompleted status will appear here -->
+    </div>
+    <div class="dashboard-column" id="manualReviewRequired">
+        <h2>Manual Review Required</h2>
+        <!-- Loans in ManualReviewRequired status will appear here -->
+    </div>
+    <div class="dashboard-column" id="applicationApproved">
+        <h2>Application Approved</h2>
+        <!-- Loans in ApplicationApproved status will appear here -->
     </div>
 </div>
 <div id="completedLoans">
     <h2>Completed Loans</h2>
     <!-- Completed loans will be summarized here -->
 </div>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>
-

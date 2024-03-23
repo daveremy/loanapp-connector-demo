@@ -1,40 +1,67 @@
 document.addEventListener('DOMContentLoaded', function () {
     var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
     socket.on('state_change', function (data) {
-        // Adjustments to match the new data structure
         const eventType = data.metadata['Es-Event-Type'] || 'Unknown';
         const event = data.event;
         const state = data.new_state;
-        updateLoanApplications(eventType, event, state);
+        if (isTerminal(state.status)) {
+            updateCompletedLoans(state);
+        } else {
+            updateDashboardColumns(state);
+        }
     });
 });
 
-function updateLoanApplications(eventType, event, state) {
+function updateDashboardColumns(state) {
     const loanId = state['loan_id'];
-    const activeLoansDiv = document.getElementById('activeLoansGrid');
-    const completedLoansDiv = document.getElementById('completedLoans');
-
+    const columnId = statusToColumnId(state.status);
     let loanCard = document.getElementById(`loan-${loanId}`);
-    if (loanCard) {
-        updateLoanCard(loanCard, state);
-        if (isTerminal(state.status)) {
-            loanCard.remove();
-            completedLoansDiv.appendChild(loanCard);
-        }
-    } else {
+
+    if (!loanCard) {
         loanCard = createLoanCard(state);
-        if (isTerminal(state.status)) {
-            completedLoansDiv.appendChild(loanCard);
-            setTimeout(() => { loanCard.remove(); }, 60000); // Optional: Remove from completed after 60 seconds
-        } else {
-            activeLoansDiv.appendChild(loanCard);
-        }
+    } else {
+        // Remove and re-add the card to trigger the animation
+        loanCard.classList.remove('shake');
+        // Use setTimeout to ensure the class removal has been processed
+        setTimeout(() => loanCard.classList.add('shake'), 0);
     }
-    addLoanEvent(loanCard, eventType, event);
+
+    const column = document.getElementById(columnId);
+    if (column) {
+        column.appendChild(loanCard);
+        updateLoanCard(loanCard, state);
+    }
+}
+
+function updateCompletedLoans(state) {
+    const loanId = state['loan_id'];
+    const completedLoansDiv = document.getElementById('completedLoans');
+    let loanCard = document.getElementById(`loan-${loanId}`);
+
+    if (!loanCard) {
+        loanCard = createLoanCard(state);
+    }
+
+    completedLoansDiv.appendChild(loanCard);
+    updateLoanCard(loanCard, state);
 }
 
 function isTerminal(status) {
     return ["LoanDisbursed", "ApplicationDenied"].includes(status);
+}
+
+function statusToColumnId(status) {
+    // Maps loan application status to the corresponding dashboard column ID.
+    // Ensure these IDs match exactly with those in your HTML.
+    const statusMap = {
+        'ApplicationReceived': 'applicationReceived',
+        'CreditCheckInitiated': 'creditCheckInitiated',
+        'CreditCheckCompleted': 'creditCheckCompleted',
+        'ManualReviewRequired': 'manualReviewRequired',
+        'ApplicationApproved': 'applicationApproved',
+        // Add any other statuses as needed
+    };
+    return statusMap[status] || 'unknownStatus'; // Adjust as needed for default or error handling
 }
 
 function createLoanCard(state) {
@@ -74,15 +101,19 @@ function updateLoanCard(loanCard, state) {
         maximumFractionDigits: 2
     }).format(state.loan_amount);
 
-    loanSummary.innerHTML = `
-        <div class="loan-card-header">
-            <span><strong>ID:</strong> ${state.loan_id}</span>
-            <span class="status-tag"><strong>${state.status}</strong></span>
-        </div>
-        <div class="loan-details">
-            <div><strong>Type:</strong> ${state.loan_purpose} <strong>Amount:</strong> ${formattedLoanAmount}</div>
-        </div>
-    `;
+    // Start constructing the HTML with the loan ID
+    let loanDetailsHTML = `<div class="loan-card-header"><span><strong>ID:</strong> ${state.loan_id}</span>`;
+
+    // Use the isTerminal function to check if the status should be included
+    if (isTerminal(state.status)) {
+        loanDetailsHTML += `<span class="status-tag"><strong>&nbsp;${state.status}</strong></span>`;
+    }
+
+    loanDetailsHTML += `</div><div class="loan-details">
+                         <div><strong>Type:</strong> ${state.loan_purpose}, <strong>Amount:</strong> ${formattedLoanAmount}</div>
+                         </div>`;
+
+    loanSummary.innerHTML = loanDetailsHTML;
 
     updateStatusClass(loanCard, state.status);
 }
@@ -117,23 +148,16 @@ function addLoanEvent(loanCard, eventType, event) {
 }
 
 function formatEventDetails(event) {
-    // Assuming the timestamp is provided in the event data
     const formattedTimestamp = new Date(event.timestamp * 1000).toLocaleString();
 
-    // Construct the details string, excluding loanId and timestamp
     let detailsString = Object.entries(event)
-                              .filter(([key]) => !['loanId', 'timestamp'].includes(key))
-                              .map(([key, value]) => {
-                                  // Format any monetary values
-                                  if (typeof value === 'number' && (key.toLowerCase().includes('amount') || key.toLowerCase().includes('currency'))) {
-                                      value = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
-                                  }
-                                  return `${key}: ${value}`;
-                              })
-                              .join(', ');
-    if (detailsString.length > 0) {
-        detailsString = `{ ${detailsString} }`;
-    }
-
+        .filter(([key]) => !['loanId', 'timestamp'].includes(key))
+        .map(([key, value]) => {
+            if (typeof value === 'number' && (key.toLowerCase().includes('amount') || key.toLowerCase().includes('currency'))) {
+                value = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+            }
+            return `${key}: ${value}`;
+        })
+        .join(', ');
     return `${formattedTimestamp} - ${detailsString}`;
 }
